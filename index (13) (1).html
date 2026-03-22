@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incite AI | Omni-Terminal 150+</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #00f3ff; --buy: #00ff41; --sell: #ff003c; --bg: #020202; }
+        body { background: var(--bg); color: #fff; font-family: 'JetBrains Mono', monospace; margin: 0; padding-bottom: 60px; }
+        
+        /* SEARCH & NAVIGATION */
+        .top-nav { background: #000; padding: 15px; border-bottom: 2px solid #111; position: sticky; top: 0; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .search-bar { background: #080808; border: 1px solid #222; padding: 10px; color: #fff; border-radius: 4px; font-family: 'JetBrains Mono'; width: 100%; outline: none; }
+        .search-bar:focus { border-color: var(--accent); }
+
+        .container { padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+
+        /* SCALABLE SIGNAL CARD */
+        .card { background: #080808; border: 1px solid #151515; border-radius: 4px; padding: 15px; position: relative; }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #111; padding-bottom: 8px; }
+        .pair-title { font-family: 'Orbitron'; font-size: 0.85rem; color: var(--accent); }
+        .tag { font-size: 0.5rem; color: #555; border: 1px solid #222; padding: 2px 5px; }
+
+        .price-area { margin: 10px 0; display: flex; justify-content: space-between; align-items: baseline; }
+        .price { font-size: 1.4rem; font-weight: bold; }
+        .change { font-size: 0.7rem; }
+
+        .ai-reason { font-size: 0.65rem; color: #666; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 3px; border-left: 2px solid #222; margin-top: 10px; }
+        .tpsl-data { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.7rem; border-top: 1px solid #111; padding-top: 10px; }
+
+        .btn-entry { width: 100%; margin-top: 12px; padding: 8px; font-size: 0.7rem; font-weight: bold; border: none; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-family:'Orbitron'; color:var(--accent); font-size:0.7rem;">INCITE_OMNI_STREAM v4.0</span>
+            <span id="counter" style="font-size:0.6rem; color:#444">LOADING_ASSETS...</span>
+        </div>
+        <input type="text" id="searchInput" class="search-bar" placeholder="SEARCH PAIR (e.g. GOLD, SOL, EUR)...">
+    </div>
+
+    <div class="container" id="master-grid"></div>
+
+    <script>
+        // 1. ASSET LIST DEFINITION
+        const fxPairs = ['EURUSD','GBPUSD','USDJPY','XAUUSD','AUDUSD','USDCAD','USDCHF','NZDUSD','EURJPY','GBPJPY','EURAUD','GBPAUD','USDMXN','USDTRY','USDZAR','USDCNH','SGDJPY','XAGUSD'];
+        
+        // Simulating 100 Top Crypto Pairs
+        const cryptoPairs = ['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ADAUSDT','AVAXUSDT','DOGEUSDT','DOTUSDT','LINKUSDT','MATICUSDT','SHIBUSDT','LTCUSDT','TRXUSDT','UNIUSDT','ATOMUSDT','NEARUSDT','XMRUSDT','ETCUSDT','BCHUSDT','APTUSDT','OPUSDT','ARBUSDT','LDOUSDT','TIAUSDT','SUIUSDT','SEIUSDT','INJUSDT','ORDIUSDT','STXUSDT','KASUSDT','PEPEUSDT','BONKUSDT','WIFUSDT','FLOKIUSDT','RNDRUSDT','FETUSDT','AGIXUSDT','OCEANUSDT','JASMYUSDT','GALAUSDT','IMXUSDT','SANDUSDT','MANAUSDT','THETAUSDT','FILUSDT','ICPUSDT','HBARUSDT','VETUSDT','EGLDUSDT','AAVEUSDT','MKRUSDT','SNXUSDT','CRVUSDT','DYDXUSDT','GRTUSDT','GMXUSDT','PENDLEUSDT','ENSUSDT','JUPUSDT','PYTHUSDT','RAYUSDT','BONKUSDT','MNTUSDT','RUNEUSDT','ARUSDT','FTMUSDT','BEAMUSDT','AXSUSDT','ENJUSDT','CHZUSDT','FLOWUSDT','KAVAUSDT','MINAUSDT','ZILUSDT','HOTUSDT','QTUMUSDT','DASHUSDT','ZECUSDT','NEOUSDT','IOTAUSDT','OMGUSDT','ICXUSDT','ANKRUSDT','RVNUSDT','BATUSDT','1INCHUSDT','SUSHIUSDT','YFIUSDT','COMPUSDT','REBUSDT','WOOUSDT','GLMRUSDT','MOVRUSDT','ASTRUSDT','SCRTUSDT','RONUSDT','PIXELUSDT','MAVIAUSDT','STRKUSDT','ALTUSDT'];
+
+        const allAssets = [...fxPairs, ...cryptoPairs];
+        const grid = document.getElementById('master-grid');
+        document.getElementById('counter').innerText = `MONITORING ${allAssets.length} ASSETS`;
+
+        // 2. INITIALIZE CARDS
+        allAssets.forEach(p => {
+            const isCrypto = cryptoPairs.includes(p);
+            grid.innerHTML += `
+                <div class="card" id="card-${p}" data-pair="${p}">
+                    <div class="card-header">
+                        <span class="pair-title">${p.replace('USDT','/USD')}</span>
+                        <span class="tag">${isCrypto ? 'CRYPTO' : 'FOREX'}</span>
+                    </div>
+                    <div class="price-area">
+                        <div class="price" id="price-${p}">0.00</div>
+                        <div class="change" id="change-${p}">0.00%</div>
+                    </div>
+                    <div class="ai-reason" id="reason-${p}">Evaluating structural liquidity...</div>
+                    <div class="tpsl-data">
+                        <div>TP: <span id="tp-${p}" style="color:var(--buy)">--</span></div>
+                        <div>SL: <span id="sl-${p}" style="color:var(--sell)">--</span></div>
+                    </div>
+                    <button class="btn-entry" id="btn-${p}">ANALYZING</button>
+                </div>
+            `;
+        });
+
+        // 3. WSS SERVER CONNECTION
+        const ws = new WebSocket('wss://stream.binance.com:9443/ws');
+        ws.onopen = () => {
+            const streams = allAssets.map(p => `${p.toLowerCase()}@ticker`);
+            // Note: Limited to 200 streams per connection on public Binance WSS
+            ws.send(JSON.stringify({ method: "SUBSCRIBE", params: streams, id: 1 }));
+        };
+
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.e === '24hrTicker') updateOmniSignal(data.s.toUpperCase(), parseFloat(data.c), parseFloat(data.P));
+        };
+
+        function updateOmniSignal(pair, price, change) {
+            const isBull = change >= 0;
+            const dec = price > 500 ? 2 : (price < 1 ? 6 : 4);
+            
+            document.getElementById(`price-${pair}`).innerText = price.toFixed(dec);
+            document.getElementById(`change-${pair}`).innerText = (isBull ? '+' : '') + change + '%';
+            document.getElementById(`change-${pair}`).style.color = isBull ? 'var(--buy)' : 'var(--sell)';
+            
+            const btn = document.getElementById(`btn-${pair}`);
+            btn.innerText = isBull ? 'STRONG BUY ENTRY' : 'STRONG SELL ENTRY';
+            btn.style.background = isBull ? 'var(--buy)' : 'var(--sell)';
+            btn.style.color = isBull ? '#000' : '#fff';
+
+            // AI Logic Simulation
+            const volatility = Math.abs(change) * 0.006;
+            document.getElementById(`tp-${pair}`).innerText = (isBull ? price * (1+volatility*2) : price * (1-volatility*2)).toFixed(dec);
+            document.getElementById(`sl-${pair}`).innerText = (isBull ? price * (1-volatility) : price * (1+volatility)).toFixed(dec);
+            
+            if (Math.random() > 0.99) {
+                document.getElementById(`reason-${pair}`).innerText = isBull ? "Whale accumulation detected. RSI reset complete." : "Exchange inflow spike. Bearish rejection at local resistance.";
+            }
+        }
+
+        // 4. SEARCH LOGIC
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const term = e.target.value.toUpperCase();
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.display = card.dataset.pair.includes(term) ? 'block' : 'none';
+            });
+        });
+
+        gsap.from(".card", { opacity: 0, scale: 0.8, stagger: 0.01, duration: 1, ease: "power2.out" });
+    </script>
+</body>
+</html>
